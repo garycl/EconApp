@@ -6,10 +6,6 @@ from dash import dcc, html, dash_table
 
 import plotly.express as px
 import pandas as pd
-import re        
-import numpy as np
-import glob
-import os
 import plotly.graph_objects as go
 import plotly.io as pio
 pio.templates.default="plotly_white"
@@ -121,10 +117,10 @@ def get_balanced_panel(df, datevar='Date'):
     end=df.Date.max()
     for area in df.Type.unique():
         area_start=df[df.Type==area].Date.min()
-        if area_start > start:
+        if area_start>start:
                 start=area_start
         area_end=df[df.Type==area].Date.max()
-        if area_end < end:
+        if area_end<end:
             end=area_end
     
     df=df[(df.Date>=start) & (df.Date<=end)]
@@ -187,14 +183,22 @@ def trend_graph(df, state_name, msa, yvarname, check_list, title=None,yaxis_titl
         area_dict[area]=yvalue
     area_dict=pd.DataFrame(index=area_dict.keys(), data=area_dict.values(), columns=['yvalue'])
     area_dict=area_dict.sort_values(by='yvalue', ascending=False)
-    if area_dict['yvalue'][0] - area_dict['yvalue'][1]<0.5:
-        area_dict['yvalue'][0]=area_dict['yvalue'][0] + 0.5
-    if area_dict['yvalue'][1] - area_dict['yvalue'][2]<0.5:
-        area_dict['yvalue'][2]=area_dict['yvalue'][2] - 0.5
+    if yvarname == "Unemployment Rate":
+        if area_dict['yvalue'][0] - area_dict['yvalue'][1]<0.5:
+            area_dict['yvalue'][0]=area_dict['yvalue'][0] + 0.5
+        if area_dict['yvalue'][1] - area_dict['yvalue'][2]<0.5:
+            area_dict['yvalue'][2]=area_dict['yvalue'][2] - 0.5
+    elif yvarname == "Index":
+        if area_dict['yvalue'][0] - area_dict['yvalue'][1]<4:
+            area_dict['yvalue'][0] = area_dict['yvalue'][0] + 4
+        if area_dict['yvalue'][1] - area_dict['yvalue'][2]<5:
+            area_dict['yvalue'][2] = area_dict['yvalue'][2]-5
     area_dict=area_dict.to_dict('index')
 
     # Label y-values
     xvalue=df['Year'].max()
+    if xvalue<2021:
+        xvalue=2021
     for area in area_list:
         temp=df[df.Area==area]
         temp=temp[temp.Year==temp.Year.max()]
@@ -222,6 +226,8 @@ def trend_graph(df, state_name, msa, yvarname, check_list, title=None,yaxis_titl
     # Title layout
     xmin=df.Year.min().astype(int)
     xmax=df.Year.max().astype(int)
+    if xmax<2021:
+        xmax=2021
     ymin=df[yvarname].min()
     ymax=df[yvarname].max()
     yheight=ymax + (ymax-ymin)/12
@@ -255,9 +261,9 @@ def trend_graph(df, state_name, msa, yvarname, check_list, title=None,yaxis_titl
             showgrid=False
         )
     )
-    y0=df.loc[df.Year==df.Year.min(), yvarname].max()
+    
     if yvarname=="Index":
-        fig.update_yaxes(range=[min(yheight-10,90),yheight+10])
+        fig.update_yaxes(range=[ymin-10,yheight+10])
     else:
         fig.update_yaxes(range=[0,yheight+1])
 
@@ -449,7 +455,7 @@ def display_chart(tab, msa, check_list):
                 id='graph-1-tabs',
                 figure=fig
             ),
-            html.P('Source: Census Population and Housing Estimate'),
+            html.P('Source: Census Population and Housing'),
             dash_table.DataTable(
                 id='table-1-tabs',
                 columns=[{"name": i, "id": i} for i in table.columns],
