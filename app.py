@@ -146,7 +146,7 @@ lau.reset_index(inplace=True)
 lau['Date']=pd.to_datetime(lau['Year'], format='%Y')
 lau=lau[lau.Year>=2000]
 lau['Unemployment Rate']=lau['Unemployment'].values/lau['Labor Force'].values * 100
-lau['Unemployment Rate']=lau['Unemployment Rate'].round(1)
+lau['Unemployment Rate']=lau['Unemployment Rate'].round(1).astype(float)
 
 
 # msa names
@@ -325,7 +325,8 @@ def create_table(df, state_name, msa, yvarname, format=None):
         temp=df[df.Area==geo].copy()
         temp=temp[['Year', yvarname]].groupby('Year').mean()
         if format=="Percentage":
-            temp[yvarname]=temp[yvarname].values.round(1)
+            temp[yvarname]=temp[yvarname].values.round(1).astype(float)
+            temp[yvarname]=temp[yvarname].apply(lambda x : '{:.1f}'.format(x))
         elif format=="Thousands":
             temp[yvarname]=temp[yvarname].round(0).astype(int)
             temp[yvarname]=temp[yvarname].apply(lambda x : "{:,}".format(x))
@@ -421,6 +422,7 @@ app.layout=html.Div(
     Input('check_list', 'value')
 )
 
+# table style
 def display_chart(tab, msa, check_list):
         
     if msa is None:
@@ -451,13 +453,24 @@ def display_chart(tab, msa, check_list):
                 figure=fig
             ),
             html.P('Source: Census Population and Housing Estimate'),
-            html.Br(),
-            html.P('Table: Census Population Estimate'),
             dash_table.DataTable(
                 id='table-1-tabs',
                 columns=[{"name": i, "id": i} for i in table.columns],
                 data=table.to_dict('records'),
-                style_cell={'fontSize':16, 'font-family':'sans-serif', 'textAlign':'center'}
+                fixed_rows={'headers': True},
+                style_table={'height': 400},  # defaults to 500
+                style_cell={
+                    'fontSize':16, 
+                    'font-family':'sans-serif', 
+                    'textAlign':'center',
+                },
+                style_header={
+                    'fontSize':16,
+                    'font-family':'sans-serif',
+                    'fontWeight': 'bold', 
+                    'textAlign':'center'
+                },
+                export_format="csv"
             )
     ])
     elif tab == 'tab-2': 
@@ -480,13 +493,24 @@ def display_chart(tab, msa, check_list):
                 figure=fig
             ),
             html.P('Source: Bureau of Labor Statistics'),
-            html.Br(),
-            html.P('Table: Annual Average Labor Force'),
             dash_table.DataTable(
                 id='table-2-tabs',
                 columns=[{"name": i, "id": i} for i in table.columns],
                 data=table.to_dict('records'),
-                style_cell={'fontSize':16, 'font-family':'sans-serif', 'textAlign':'center'}
+                fixed_rows={'headers': True},
+                style_table={'height': 400},  # defaults to 500
+                style_cell={
+                    'fontSize':16, 
+                    'font-family':'sans-serif', 
+                    'textAlign':'center',
+                },
+                style_header={
+                    'fontSize':16,
+                    'font-family':'sans-serif',
+                    'fontWeight': 'bold', 
+                    'textAlign':'center'
+                },
+                export_format="csv"
             )
         ])
     elif tab == 'tab-3': 
@@ -509,13 +533,24 @@ def display_chart(tab, msa, check_list):
                 figure=fig
             ),
             html.P('Source: Bureau of Labor Statistics'),
-            html.Br(),
-            html.P('Table: Annual Average Employment'),
             dash_table.DataTable(
                 id='table-2-tabs',
                 columns=[{"name": i, "id": i} for i in table.columns],
                 data=table.to_dict('records'),
-                style_cell={'fontSize':16, 'font-family':'sans-serif', 'textAlign':'center'}
+                fixed_rows={'headers': True},
+                style_table={'height': 400},  # defaults to 500
+                style_cell={
+                    'fontSize':16, 
+                    'font-family':'sans-serif', 
+                    'textAlign':'center',
+                },
+                style_header={
+                    'fontSize':16,
+                    'font-family':'sans-serif',
+                    'fontWeight': 'bold', 
+                    'textAlign':'center'
+                },
+                export_format="csv"
             )
         ])
 
@@ -536,13 +571,24 @@ def display_chart(tab, msa, check_list):
                 figure=fig
             ),
             html.P('Source: Bureau of Labor Statistics'),
-            html.Br(),
-            html.P('Table: Annual Average Unemployment Rate (Not Seasonally Adjusted)'),
             dash_table.DataTable(
                 id='table-4-tabs',
                 columns=[{"name": i, "id": i} for i in table.columns],
                 data=table.to_dict('records'),
-                style_cell={'fontSize':16, 'font-family':'sans-serif', 'textAlign':'center'}
+                fixed_rows={'headers': True},
+                style_table={'height': 400},  # defaults to 500
+                style_cell={
+                    'fontSize':16, 
+                    'font-family':'sans-serif', 
+                    'textAlign':'center',
+                },
+                style_header={
+                    'fontSize':16,
+                    'font-family':'sans-serif',
+                    'fontWeight': 'bold', 
+                    'textAlign':'center'
+                },
+                export_format="csv"
             )
         ])
 
