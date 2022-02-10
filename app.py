@@ -338,7 +338,6 @@ def create_table(df, state_name, msa, yvarname, format=None):
 
 
 app = dash.Dash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP])
-
 server = app.server
 
 # the style arguments for the sidebar.
