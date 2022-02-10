@@ -550,4 +550,4 @@ def display_chart(tab, msa, check_list):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)
