@@ -78,7 +78,7 @@ def calc_index(df, variable):
     
     start=df.Year.min()
     end=df.Year.max()
-    t=end - start
+    t=end-start
     
     # Calculate CAGR
     area_list=df['Area'].unique()
@@ -96,7 +96,7 @@ def calc_CAGR(df, variable):
     
     start=df.Year.min()
     end=df.Year.max()
-    t=end - start
+    t=end-start
     
     # Calculate CAGR
     area_list=df['Area'].unique()
@@ -104,7 +104,7 @@ def calc_CAGR(df, variable):
         area_df=df[df['Area']==area].copy()
         vbegin=area_df.loc[area_df.Year==start, variable].values[0]
         vfinal=area_df.loc[area_df.Year==end, variable].values[0]
-        cagr=(vfinal/vbegin)**(1/t) - 1
+        cagr=(vfinal/vbegin)**(1/t)-1
         cagr=cagr * 100
         cagr=round(cagr, 2)
         df.loc[df.Area==area, 'CAGR']=cagr
@@ -149,7 +149,7 @@ def trend_graph(df, state_name, msa, yvarname, check_list, title=None,yaxis_titl
 
     # Rename MSA
     msa_name=msa.split(',')[0].split('-')[0].strip()
-    msa_name=msa_name + ' MSA'
+    msa_name=msa_name+' MSA'
     df.loc[df.Area==msa,'Area']=msa_name 
     color_discrete_map={
         "United States": "#F77F0E",
@@ -184,14 +184,14 @@ def trend_graph(df, state_name, msa, yvarname, check_list, title=None,yaxis_titl
     area_dict=pd.DataFrame(index=area_dict.keys(), data=area_dict.values(), columns=['yvalue'])
     area_dict=area_dict.sort_values(by='yvalue', ascending=False)
     if yvarname == "Unemployment Rate":
-        if area_dict['yvalue'][0] - area_dict['yvalue'][1]<0.5:
-            area_dict['yvalue'][0]=area_dict['yvalue'][0] + 0.5
-        if area_dict['yvalue'][1] - area_dict['yvalue'][2]<0.5:
-            area_dict['yvalue'][2]=area_dict['yvalue'][2] - 0.5
+        if area_dict['yvalue'][0]-area_dict['yvalue'][1]<0.5:
+            area_dict['yvalue'][0]=area_dict['yvalue'][0]+0.5
+        if area_dict['yvalue'][1]-area_dict['yvalue'][2]<0.5:
+            area_dict['yvalue'][2]=area_dict['yvalue'][2]-0.5
     elif yvarname == "Index":
-        if area_dict['yvalue'][0] - area_dict['yvalue'][1]<4:
-            area_dict['yvalue'][0] = area_dict['yvalue'][0] + 4
-        if area_dict['yvalue'][1] - area_dict['yvalue'][2]<5:
+        if area_dict['yvalue'][0]-area_dict['yvalue'][1]<4:
+            area_dict['yvalue'][0] = area_dict['yvalue'][0]+4
+        if area_dict['yvalue'][1]-area_dict['yvalue'][2]<5:
             area_dict['yvalue'][2] = area_dict['yvalue'][2]-5
     area_dict=area_dict.to_dict('index')
 
@@ -230,7 +230,7 @@ def trend_graph(df, state_name, msa, yvarname, check_list, title=None,yaxis_titl
         xmax=2021
     ymin=df[yvarname].min()
     ymax=df[yvarname].max()
-    yheight=ymax + (ymax-ymin)/12
+    yheight=ymax+(ymax-ymin)/12
     fig.update_layout(
         font_family="Arial",
         xaxis_title=xaxis_title,
@@ -263,7 +263,7 @@ def trend_graph(df, state_name, msa, yvarname, check_list, title=None,yaxis_titl
     )
     
     if yvarname=="Index":
-        fig.update_yaxes(range=[ymin-10,yheight+10])
+        fig.update_yaxes(range=[min(ymin-10,90), yheight+5])
     else:
         fig.update_yaxes(range=[0,yheight+1])
 
@@ -321,7 +321,7 @@ def trend_graph(df, state_name, msa, yvarname, check_list, title=None,yaxis_titl
 
 def create_table(df, state_name, msa, yvarname, format=None):
     msa_name=msa.split(',')[0].split('-')[0].strip()
-    msa_name=msa_name + ' MSA'
+    msa_name=msa_name+' MSA'
     geo_list=['United States', state_name, msa]
     table=pd.DataFrame()
     for geo in geo_list:
@@ -375,7 +375,7 @@ controls=dbc.Col(
     [
         html.P('Select MSA', style={'textAlign': 'center'}),
         dcc.Dropdown(id='msa_dropdown',
-                     value='Abilene, TX',
+                     value='New York-Newark-Jersey City, NY-NJ-PA',
                      options=[{'label':msa, 'value':msa} for msa in msa_list]),
         html.Br(),
         html.P('Plot Recessions', style={'textAlign': 'center'}),
