@@ -457,7 +457,6 @@ def display_chart(tab, msa, check_list):
                 id='table-1-tabs',
                 columns=[{"name": i, "id": i} for i in table.columns],
                 data=table.to_dict('records'),
-                fixed_rows={'headers': True},
                 style_table={'height': 400},  # defaults to 500
                 style_cell={
                     'fontSize':16, 
@@ -497,7 +496,6 @@ def display_chart(tab, msa, check_list):
                 id='table-2-tabs',
                 columns=[{"name": i, "id": i} for i in table.columns],
                 data=table.to_dict('records'),
-                fixed_rows={'headers': True},
                 style_table={'height': 400},  # defaults to 500
                 style_cell={
                     'fontSize':16, 
@@ -537,7 +535,6 @@ def display_chart(tab, msa, check_list):
                 id='table-2-tabs',
                 columns=[{"name": i, "id": i} for i in table.columns],
                 data=table.to_dict('records'),
-                fixed_rows={'headers': True},
                 style_table={'height': 400},  # defaults to 500
                 style_cell={
                     'fontSize':16, 
@@ -575,7 +572,6 @@ def display_chart(tab, msa, check_list):
                 id='table-4-tabs',
                 columns=[{"name": i, "id": i} for i in table.columns],
                 data=table.to_dict('records'),
-                fixed_rows={'headers': True},
                 style_table={'height': 400},  # defaults to 500
                 style_cell={
                     'fontSize':16, 
