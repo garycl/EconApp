@@ -465,7 +465,7 @@ def display_chart(tab, msa, check_list):
                 style_cell={
                     'fontSize':16, 
                     'font-family':'sans-serif', 
-                    'textAlign':'center',
+                    'textAlign':'right',
                 },
                 style_header={
                     'fontWeight': 'bold', 
@@ -502,7 +502,7 @@ def display_chart(tab, msa, check_list):
                 style_cell={
                     'fontSize':16, 
                     'font-family':'sans-serif', 
-                    'textAlign':'center',
+                    'textAlign':'right',
                 },
                 style_header={
                     'fontWeight': 'bold', 
@@ -539,7 +539,7 @@ def display_chart(tab, msa, check_list):
                 style_cell={
                     'fontSize':16, 
                     'font-family':'sans-serif', 
-                    'textAlign':'center',
+                    'textAlign':'right',
                 },
                 style_header={
                     'fontWeight': 'bold', 
@@ -574,7 +574,7 @@ def display_chart(tab, msa, check_list):
                 style_cell={
                     'fontSize':16, 
                     'font-family':'sans-serif', 
-                    'textAlign':'center',
+                    'textAlign':'right',
                 },
                 style_header={
                     'fontWeight': 'bold', 
