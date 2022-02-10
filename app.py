@@ -1,12 +1,9 @@
 import dash
-import dash_core_components as dcc
 import dash_bootstrap_components as dbc
-import dash_html_components as html
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
-#from dash import dcc
+from dash import dcc, html, dash_table
 
-import dash_table
 import plotly.express as px
 import pandas as pd
 import re        
@@ -457,6 +454,7 @@ def display_chart(tab, msa, check_list):
                 id='table-1-tabs',
                 columns=[{"name": i, "id": i} for i in table.columns],
                 data=table.to_dict('records'),
+                fixed_rows={'headers': True},
                 style_table={'height': 400},  # defaults to 500
                 style_cell={
                     'fontSize':16, 
@@ -464,10 +462,7 @@ def display_chart(tab, msa, check_list):
                     'textAlign':'center',
                 },
                 style_header={
-                    'fontSize':16,
-                    'font-family':'sans-serif',
                     'fontWeight': 'bold', 
-                    'textAlign':'center'
                 },
                 export_format="csv"
             )
@@ -496,6 +491,7 @@ def display_chart(tab, msa, check_list):
                 id='table-2-tabs',
                 columns=[{"name": i, "id": i} for i in table.columns],
                 data=table.to_dict('records'),
+                fixed_rows={'headers': True},
                 style_table={'height': 400},  # defaults to 500
                 style_cell={
                     'fontSize':16, 
@@ -503,10 +499,7 @@ def display_chart(tab, msa, check_list):
                     'textAlign':'center',
                 },
                 style_header={
-                    'fontSize':16,
-                    'font-family':'sans-serif',
                     'fontWeight': 'bold', 
-                    'textAlign':'center'
                 },
                 export_format="csv"
             )
@@ -535,6 +528,7 @@ def display_chart(tab, msa, check_list):
                 id='table-2-tabs',
                 columns=[{"name": i, "id": i} for i in table.columns],
                 data=table.to_dict('records'),
+                fixed_rows={'headers': True},
                 style_table={'height': 400},  # defaults to 500
                 style_cell={
                     'fontSize':16, 
@@ -542,10 +536,7 @@ def display_chart(tab, msa, check_list):
                     'textAlign':'center',
                 },
                 style_header={
-                    'fontSize':16,
-                    'font-family':'sans-serif',
                     'fontWeight': 'bold', 
-                    'textAlign':'center'
                 },
                 export_format="csv"
             )
@@ -572,6 +563,7 @@ def display_chart(tab, msa, check_list):
                 id='table-4-tabs',
                 columns=[{"name": i, "id": i} for i in table.columns],
                 data=table.to_dict('records'),
+                fixed_rows={'headers': True},
                 style_table={'height': 400},  # defaults to 500
                 style_cell={
                     'fontSize':16, 
@@ -579,10 +571,7 @@ def display_chart(tab, msa, check_list):
                     'textAlign':'center',
                 },
                 style_header={
-                    'fontSize':16,
-                    'font-family':'sans-serif',
                     'fontWeight': 'bold', 
-                    'textAlign':'center'
                 },
                 export_format="csv"
             )
