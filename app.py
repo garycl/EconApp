@@ -136,24 +136,22 @@ def get_balanced_panel(df, datevar='Date'):
     return df
 
 # read data
-pop=pd.read_csv('data/pop.csv')
+pop=pd.read_csv('https://github.com/garycl/EconApp/tree/master/data/pop.csv')
 pop['Date']=pd.to_datetime(pop['Year'], format='%Y')
 pop=get_balanced_panel(pop)
 
-bls=pd.read_csv('data/bls.csv')
-#bls['Date']=pd.to_datetime(bls['Date'])
-bls=bls.groupby(['Area','Type', 'Year']).mean().round(1)
-bls.reset_index(inplace=True)
-bls['Date']=pd.to_datetime(bls['Year'], format='%Y')
-bls=bls[bls.Year>=2000]
-bls['Unemployment Rate']=bls['Unemployment'].values/bls['Labor Force'].values * 100
-bls['Unemployment Rate']=bls['Unemployment Rate'].round(1)
-sm=pd.read_csv('data/sm.csv')
-qcew=pd.read_csv('data/qcew.csv')
+lau=pd.read_csv('https://github.com/garycl/EconApp/tree/master/data/lau.csv')
+#lau['Date']=pd.to_datetime(lau['Date'])
+lau=lau.groupby(['Area','Type', 'Year']).mean().round(1)
+lau.reset_index(inplace=True)
+lau['Date']=pd.to_datetime(lau['Year'], format='%Y')
+lau=lau[lau.Year>=2000]
+lau['Unemployment Rate']=lau['Unemployment'].values/lau['Labor Force'].values * 100
+lau['Unemployment Rate']=lau['Unemployment Rate'].round(1)
 
 
 # msa names
-msa_list=bls.loc[bls.Type=='MSA', 'Area'].sort_values().unique()
+msa_list=lau.loc[lau.Type=='MSA', 'Area'].sort_values().unique()
 
 def trend_graph(df, state_name, msa, yvarname, check_list, title=None,yaxis_title=None,xaxis_title=None):
 
@@ -465,8 +463,8 @@ def display_chart(tab, msa, check_list):
             )
     ])
     elif tab == 'tab-2': 
-        df=bls[(bls.Area=='United States') | (bls.Area==state_name) | (bls.Area==msa)].copy()
-        table=create_table(bls, state_name, msa, 'Labor Force', 'Thousands')
+        df=lau[(lau.Area=='United States') | (lau.Area==state_name) | (lau.Area==msa)].copy()
+        table=create_table(lau, state_name, msa, 'Labor Force', 'Thousands')
         df=calc_index(df, 'Labor Force')
         df=calc_CAGR(df, 'Index')
         yvarname='Index'
@@ -494,8 +492,8 @@ def display_chart(tab, msa, check_list):
             )
         ])
     elif tab == 'tab-3': 
-        df=bls[(bls.Area=='United States') | (bls.Area==state_name) | (bls.Area==msa)].copy()
-        table=create_table(bls, state_name, msa, 'Employment', 'Thousands')
+        df=lau[(lau.Area=='United States') | (lau.Area==state_name) | (lau.Area==msa)].copy()
+        table=create_table(lau, state_name, msa, 'Employment', 'Thousands')
         df=calc_index(df, 'Employment')
         df=calc_CAGR(df, 'Index')
         yvarname='Index'
@@ -524,8 +522,8 @@ def display_chart(tab, msa, check_list):
         ])
 
     elif tab == 'tab-4': 
-        df=bls[(bls.Area=='United States') | (bls.Area==state_name) | (bls.Area==msa)].copy()
-        table=create_table(bls, state_name, msa, 'Unemployment Rate', 'Percentage')
+        df=lau[(lau.Area=='United States') | (lau.Area==state_name) | (lau.Area==msa)].copy()
+        table=create_table(lau, state_name, msa, 'Unemployment Rate', 'Percentage')
         yvarname='Unemployment Rate'
         fig=trend_graph(
             df, state_name, msa, yvarname, check_list,
