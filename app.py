@@ -2,10 +2,9 @@ import dash
 import dash_core_components as dcc
 import dash_bootstrap_components as dbc
 import dash_html_components as html
-from jupyter_dash import JupyterDash
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
-from dash import dcc
+#from dash import dcc
 
 import dash_table
 import plotly.express as px
@@ -224,8 +223,8 @@ def trend_graph(df, state_name, msa, yvarname, check_list, title=None,yaxis_titl
         )
 
     # Title layout
-    xmin=df.Year.min()
-    xmax=df.Year.max()
+    xmin=df.Year.min().astype(int)
+    xmax=df.Year.max().astype(int)
     ymin=df[yvarname].min()
     ymax=df[yvarname].max()
     yheight=ymax + (ymax-ymin)/12
@@ -338,7 +337,7 @@ def create_table(df, state_name, msa, yvarname, format=None):
     return table
 
 
-app =JupyterDash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP])
+app = dash.Dash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 server = app.server
 
