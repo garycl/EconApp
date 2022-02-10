@@ -136,11 +136,11 @@ def get_balanced_panel(df, datevar='Date'):
     return df
 
 # read data
-pop=pd.read_csv('https://github.com/garycl/EconApp/tree/master/data/pop.csv')
+pop=pd.read_csv('https://raw.githubusercontent.com/garycl/EconApp/master/data/pop.csv')
 pop['Date']=pd.to_datetime(pop['Year'], format='%Y')
 pop=get_balanced_panel(pop)
 
-lau=pd.read_csv('https://github.com/garycl/EconApp/tree/master/data/lau.csv')
+lau=pd.read_csv('https://raw.githubusercontent.com/garycl/EconApp/master/data/lau.csv')
 #lau['Date']=pd.to_datetime(lau['Date'])
 lau=lau.groupby(['Area','Type', 'Year']).mean().round(1)
 lau.reset_index(inplace=True)
