@@ -151,6 +151,7 @@ def trend_graph(df, state_name, msa, yvarname, check_list, title=None,yaxis_titl
     msa_name=msa.split(',')[0].split('-')[0].strip()
     msa_name=msa_name+' MSA'
     df.loc[df.Area==msa,'Area']=msa_name 
+    symbols = ['circle', 'triangle-up', 'square']
     color_discrete_map={
         "United States": "#F77F0E",
         state_name: "#1F77B4",
@@ -158,18 +159,22 @@ def trend_graph(df, state_name, msa, yvarname, check_list, title=None,yaxis_titl
     }
     
     # Line Graph
-    df.loc[df.Area==msa,'Area']=msa_name   
+    df.loc[df.Area==msa,'Area']=msa_name
+    df['Size']=1   
     df=df.groupby(['Area',pd.Grouper(key='Date', freq='y')]).mean().round(1)
     df.reset_index(inplace=True)
-    line_graph=px.line(
+    line_graph=px.scatter(
         data_frame=df, 
         x='Year', y=yvarname,
         color='Area',
         color_discrete_map=color_discrete_map,
-        markers=True,
+        symbol= df['Area'],
+        size=df['Size'],
+        size_max=7,
+        symbol_sequence=symbols,
         width=1200,
         height=600,
-    )
+    ).update_traces(mode="lines+markers")
     fig=go.Figure(data=line_graph)
 
     # Retrieve latest y-values
