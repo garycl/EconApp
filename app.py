@@ -73,7 +73,7 @@ us_state_to_abbrev={
 # invert the dictionary
 abbrev_to_us_state=dict(map(reversed, us_state_to_abbrev.items()))
 
-# calc index
+# Calculate Index
 def calc_index(df, variable):
     
     start=df.Year.min()
@@ -91,7 +91,7 @@ def calc_index(df, variable):
     return df
 
 
-# calc cagr
+# Calculate CAGR
 def calc_CAGR(df, variable):
     
     start=df.Year.min()
@@ -111,38 +111,37 @@ def calc_CAGR(df, variable):
         
     return df
 
-# balanced panle
+# Balanced panel
 def get_balanced_panel(df, datevar='Date'):
-    start=df.Date.min()
-    end=df.Date.max()
+    start=df[datevar].min()
+    end=df[datevar].max()
     for area in df.Type.unique():
-        area_start=df[df.Type==area].Date.min()
+        area_start=df[df.Type==area][datevar].min()
         if area_start>start:
                 start=area_start
-        area_end=df[df.Type==area].Date.max()
+        area_end=df[df.Type==area][datevar].max()
         if area_end<end:
             end=area_end
     
-    df=df[(df.Date>=start) & (df.Date<=end)]
+    df=df[(df[datevar]>=start) & (df[datevar]<=end)]
     print(f'Time panel\nStart:{start}\nEnd:{end}')
     return df
 
-# read data
+# Read data
 pop=pd.read_csv('https://raw.githubusercontent.com/garycl/EconApp/master/data/pop.csv')
 pop['Date']=pd.to_datetime(pop['Year'], format='%Y')
 pop=get_balanced_panel(pop)
 
-lau=pd.read_csv('https://raw.githubusercontent.com/garycl/EconApp/master/data/lau.csv')
+lau=pd.read_csv('https://raw.githubusercontent.com/garycl/EconApp/master/data/ur.csv')
+lau=get_balanced_panel(lau, datevar='Year')
 #lau['Date']=pd.to_datetime(lau['Date'])
-lau=lau.groupby(['Area','Type', 'Year']).mean().round(1)
-lau.reset_index(inplace=True)
+#lau=lau.groupby(['Area','Type', 'Year']).mean().round(1)
+#lau.reset_index(inplace=True)
 lau['Date']=pd.to_datetime(lau['Year'], format='%Y')
-lau=lau[lau.Year>=2000]
-lau['Unemployment Rate']=lau['Unemployment'].values/lau['Labor Force'].values * 100
-lau['Unemployment Rate']=lau['Unemployment Rate'].round(1).astype(float)
+lau=lau[(lau.Year>=2000)]
 
 
-# msa names
+# MSA names
 msa_list=lau.loc[lau.Type=='MSA', 'Area'].sort_values().unique()
 
 def trend_graph(df, state_name, msa, yvarname, check_list, title=None,yaxis_title=None,xaxis_title=None):
@@ -153,9 +152,9 @@ def trend_graph(df, state_name, msa, yvarname, check_list, title=None,yaxis_titl
     df.loc[df.Area==msa,'Area']=msa_name 
     symbols = ['circle', 'triangle-up', 'square']
     color_discrete_map={
-        "United States": "#F77F0E",
-        state_name: "#1F77B4",
-        msa_name: '#2CA02E'
+        "United States": "#1b9e77",
+        state_name: "#7570b3",
+        msa_name: '#d95f02'
     }
     
     # Line Graph
@@ -174,6 +173,7 @@ def trend_graph(df, state_name, msa, yvarname, check_list, title=None,yaxis_titl
         symbol_sequence=symbols,
         width=1200,
         height=600,
+        hover_data={'Area':True, yvarname:True, 'Size':False}
     ).update_traces(mode="lines+markers")
     fig=go.Figure(data=line_graph)
 
@@ -531,12 +531,12 @@ def display_chart(tab, msa, check_list):
         return html.Div([
             html.Br(),
             dcc.Graph(
-                id='graph-2-tabs',
+                id='graph-3-tabs',
                 figure=fig
             ),
             html.P('Source: Bureau of Labor Statistics'),
             dash_table.DataTable(
-                id='table-2-tabs',
+                id='table-3-tabs',
                 columns=[{"name": i, "id": i} for i in table.columns],
                 data=table.to_dict('records'),
                 fixed_rows={'headers': True},
@@ -559,7 +559,7 @@ def display_chart(tab, msa, check_list):
         yvarname='Unemployment Rate'
         fig=trend_graph(
             df, state_name, msa, yvarname, check_list,
-            title="Annual Average Unemployment Rate (Not Seasonally Adjusted)",
+            title="Annual Average Unemployment Rate (Seasonally Adjusted)",
             xaxis_title="Calendar Year",
             yaxis_title="Percentage",
         )
