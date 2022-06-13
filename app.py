@@ -1,14 +1,15 @@
 import dash
 import dash_bootstrap_components as dbc
-from dash.dependencies import Input, Output, State
-from dash.exceptions import PreventUpdate
 from dash import dcc, html, dash_table
+from dash.dependencies import Input, Output
+from dash.exceptions import PreventUpdate
+from tabs import tab1, tab2, tab3
 
-import plotly.express as px
 import pandas as pd
-import plotly.graph_objects as go
 import plotly.io as pio
 pio.templates.default="plotly_white"
+
+from helper_functions import calc_index, calc_CAGR, get_balanced_panel, trend_graph, bea_graph,month_graph, create_table
 
 us_state_to_abbrev={
     "Alabama": "AL",
@@ -73,521 +74,362 @@ us_state_to_abbrev={
 # invert the dictionary
 abbrev_to_us_state=dict(map(reversed, us_state_to_abbrev.items()))
 
-# Calculate Index
-def calc_index(df, variable):
-    
-    start=df.Year.min()
-    end=df.Year.max()
-    t=end-start
-    
-    # Calculate CAGR
-    area_list=df['Area'].unique()
-    for area in area_list:
-        area_df=df[df['Area']==area].copy()
-        vbegin=area_df.loc[area_df.Year==start, variable].values[0]
-        df.loc[df.Area==area, f'Index']=df.loc[df.Area==area, variable].values /vbegin * 100
-        df.loc[df.Area==area, f'Index']=df.loc[df.Area==area, f'Index'].round(3)
-        
-    return df
-
-
-# Calculate CAGR
-def calc_CAGR(df, variable):
-    
-    start=df.Year.min()
-    end=df.Year.max()
-    t=end-start
-    
-    # Calculate CAGR
-    area_list=df['Area'].unique()
-    for area in area_list:
-        area_df=df[df['Area']==area].copy()
-        vbegin=area_df.loc[area_df.Year==start, variable].values[0]
-        vfinal=area_df.loc[area_df.Year==end, variable].values[0]
-        cagr=(vfinal/vbegin)**(1/t)-1
-        cagr=cagr * 100
-        cagr=round(cagr, 2)
-        df.loc[df.Area==area, 'CAGR']=cagr
-        
-    return df
-
-# Balanced panel
-def get_balanced_panel(df, datevar='Date'):
-    start=df[datevar].min()
-    end=df[datevar].max()
-    for area in df.Type.unique():
-        area_start=df[df.Type==area][datevar].min()
-        if area_start>start:
-                start=area_start
-        area_end=df[df.Type==area][datevar].max()
-        if area_end<end:
-            end=area_end
-    
-    df=df[(df[datevar]>=start) & (df[datevar]<=end)]
-    print(f'Time panel\nStart:{start}\nEnd:{end}')
-    return df
-
 # Read data
 pop=pd.read_csv('https://raw.githubusercontent.com/garycl/EconApp/master/data/pop.csv')
-pop['Date']=pd.to_datetime(pop['Year'], format='%Y')
-pop=get_balanced_panel(pop)
+pop=get_balanced_panel(pop, datevar='Year', format='%Y')
 
-lau=pd.read_csv('https://raw.githubusercontent.com/garycl/EconApp/master/data/ur.csv')
-lau=get_balanced_panel(lau, datevar='Year')
-#lau['Date']=pd.to_datetime(lau['Date'])
-#lau=lau.groupby(['Area','Type', 'Year']).mean().round(1)
-#lau.reset_index(inplace=True)
-lau['Date']=pd.to_datetime(lau['Year'], format='%Y')
-lau=lau[(lau.Year>=2000)]
+lau=pd.read_csv('/Users/GaryLin/Dropbox/Unison/Analytics/EconApp/data/lau.csv')
+#lau=get_balanced_panel(lau, datevar='Year')
+lau=get_balanced_panel(lau, datevar='Date', format='%Y-%m-%d')
 
+bea=pd.read_csv('https://raw.githubusercontent.com/garycl/EconApp/master/data/bea.csv')
+bea=get_balanced_panel(bea, datevar='Year', format='%Y')
 
-# MSA names
-msa_list=lau.loc[lau.Type=='MSA', 'Area'].sort_values().unique()
+qcew=pd.read_csv('https://raw.githubusercontent.com/garycl/EconApp/master/data/qcew.csv')
+qcew=get_balanced_panel(qcew, datevar='Year', format='%Y')
 
-def trend_graph(df, state_name, msa, yvarname, check_list, title=None,yaxis_title=None,xaxis_title=None):
-
-    # Rename MSA
-    msa_name=msa.split(',')[0].split('-')[0].strip()
-    msa_name=msa_name+' MSA'
-    df.loc[df.Area==msa,'Area']=msa_name 
-    symbols = ['circle', 'triangle-up', 'square']
-    color_discrete_map={
-        "United States": "#1b9e77",
-        state_name: "#7570b3",
-        msa_name: '#d95f02'
-    }
-    
-    # Line Graph
-    df.loc[df.Area==msa,'Area']=msa_name
-    df['Size']=1   
-    df=df.groupby(['Area',pd.Grouper(key='Date', freq='y')]).mean().round(1)
-    df.reset_index(inplace=True)
-    line_graph=px.scatter(
-        data_frame=df, 
-        x='Year', y=yvarname,
-        color='Area',
-        color_discrete_map=color_discrete_map,
-        symbol= df['Area'],
-        size=df['Size'],
-        size_max=7,
-        symbol_sequence=symbols,
-        width=1200,
-        height=600,
-        hover_data={'Area':True, yvarname:True, 'Size':False}
-    ).update_traces(mode="lines+markers")
-    fig=go.Figure(data=line_graph)
-
-    # Retrieve latest y-values
-    xvalue=df['Year'].max()
-    area_list=['United States', state_name, msa_name]
-    area_dict={}
-    for area in area_list:
-        temp=df[df.Area==area].copy()
-        temp=temp[temp.Year==temp.Year.max()]
-        yvalue=temp[yvarname].values[0]
-        area_dict[area]=yvalue
-    area_dict=pd.DataFrame(index=area_dict.keys(), data=area_dict.values(), columns=['yvalue'])
-    area_dict=area_dict.sort_values(by='yvalue', ascending=False)
-    if yvarname == "Unemployment Rate":
-        if area_dict['yvalue'][0]-area_dict['yvalue'][1]<0.5:
-            area_dict['yvalue'][0]=area_dict['yvalue'][0]+0.5
-        if area_dict['yvalue'][1]-area_dict['yvalue'][2]<0.5:
-            area_dict['yvalue'][2]=area_dict['yvalue'][2]-0.5
-    elif yvarname == "Index":
-        if area_dict['yvalue'][0]-area_dict['yvalue'][1]<4:
-            area_dict['yvalue'][0] = area_dict['yvalue'][0]+4
-        if area_dict['yvalue'][1]-area_dict['yvalue'][2]<5:
-            area_dict['yvalue'][2] = area_dict['yvalue'][2]-5
-    area_dict=area_dict.to_dict('index')
-
-    # Label y-values
-    xvalue=df['Year'].max()
-    if xvalue<2021:
-        xvalue=2021
-    for area in area_list:
-        temp=df[df.Area==area]
-        temp=temp[temp.Year==temp.Year.max()]
-        yvalue=temp[yvarname].values[0].round(1)
-        if yvarname=="Unemployment Rate":
-            yvalue=f'{yvalue}%'
-        elif yvarname=="Index":
-            cagr=temp['CAGR'].values[0]
-            yvalue=f"{yvalue}<br>(CAGR={cagr}%)"
-        else:
-            yvalue
-        fig.add_annotation(
-            x=xvalue, 
-            y=area_dict[area]['yvalue'],
-            text=f"{area}, {yvalue}",
-            font=dict(
-                color=color_discrete_map[area],
-                size=16
-            ),
-            xanchor='left',
-            showarrow=False,
-            xshift=30
-        )
-
-    # Title layout
-    xmin=df.Year.min().astype(int)
-    xmax=df.Year.max().astype(int)
-    if xmax<2021:
-        xmax=2021
-    ymin=df[yvarname].min()
-    ymax=df[yvarname].max()
-    yheight=ymax+(ymax-ymin)/12
-    fig.update_layout(
-        font_family="Arial",
-        xaxis_title=xaxis_title,
-        yaxis_title=yaxis_title,
-        title=title,
-        font=dict(
-            family="Arial",
-            size=14,
-            color="black"
-        ),
-        showlegend=False,
-        xaxis=dict(
-            tickmode='array',
-            tickvals=list(range(xmin,xmax+1,1)),
-            tickangle=270,
-            tickfont=dict(
-              size=14,
-              color='black'
-            ),
-            showgrid=False,
-        ),
-        yaxis=dict(
-            tick0=0,
-            tickfont=dict(
-                size=14,
-                color='black'
-            ),
-            showgrid=False
-        )
-    )
-    
-    if yvarname=="Index":
-        fig.update_yaxes(range=[min(ymin-10,90), yheight+5])
-    else:
-        fig.update_yaxes(range=[0,yheight+1])
-
-    # Label Recessions
-    for recession in check_list:
-        if recession=='tech_bust':
-            fig.add_shape(
-                type="rect", 
-                x0=2001.3, x1=2001.9, 
-                y0=0, y1=yheight, 
-                fillcolor='grey',
-                opacity=0.25, 
-                line=dict(color='grey')
-            )
-            fig.add_annotation(
-                x=2001, y=yheight+0.25, 
-                xshift=20, yshift=20, 
-                text='Tech Bust<br>Recession', 
-                showarrow=False,
-                font=dict(size=16)
-            )
-        if recession=='great_recession':
-            fig.add_shape(
-                type="rect", 
-                x0=2008, x1=2009, 
-                y0=0, y1=yheight, 
-                fillcolor='grey',
-                opacity=0.25, 
-                line=dict(color='grey')
-            )
-            fig.add_annotation(
-                x=2008, y=yheight+0.25, 
-                xshift=20, yshift=20, 
-                text=f'Great<br>Recession', 
-                showarrow=False,
-                font=dict(size=16)
-            )
-        if recession=='covid_recession':
-            fig.add_shape(
-                type="rect", 
-                x0=2020, x1=2020.4, 
-                y0=0, y1=yheight, 
-                fillcolor='grey',
-                opacity=0.25, 
-                line=dict(color='grey')
-            ),
-            fig.add_annotation(
-                x=2019.8, y=yheight+0.25,
-                xshift=20, yshift=20,
-                text=f'COVID<br>Recession', 
-                showarrow=False, 
-                font=dict(size=16)
-            )
-    return fig
-
-def create_table(df, state_name, msa, yvarname, format=None):
-    msa_name=msa.split(',')[0].split('-')[0].strip()
-    msa_name=msa_name+' MSA'
-    geo_list=['United States', state_name, msa]
-    table=pd.DataFrame()
-    for geo in geo_list:
-        temp=df[df.Area==geo].copy()
-        temp=temp[['Year', yvarname]].groupby('Year').mean()
-        if format=="Percentage":
-            temp[yvarname]=temp[yvarname].values.round(1).astype(float)
-            temp[yvarname]=temp[yvarname].apply(lambda x : '{:.1f}'.format(x))
-        elif format=="Thousands":
-            temp[yvarname]=temp[yvarname].round(0).astype(int)
-            temp[yvarname]=temp[yvarname].apply(lambda x : "{:,}".format(x))
-        else:
-            None
-        table=pd.concat([table, temp], axis=1)
-    table.reset_index(inplace=True)
-    table.columns=['Year', 'United States', state_name, msa_name]
-    return table
-
-
-app = dash.Dash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP])
-server = app.server
-
-# the style arguments for the sidebar.
-SIDEBAR_STYLE={
-    'position': 'fixed',
-    'top': 0,
-    'left': 0,
-    'bottom': 0,
-    'width': '20%',
-    'padding': '20px 10px',
-    'background-color': '#f8f9fa'
-}
-
-# the style arguments for the main content page.
-CONTENT_STYLE={
-    'margin-left': '5%',
-    'margin-right': '5%',
-    'top': 0,
-    'padding': '20px 10px'
-}
-TEXT_STYLE={
-    'textAlign': 'center',
-    'color': '#191970'
-}
-CARD_TEXT_STYLE={
-    'textAlign': 'center',
-    'color': '#0074D9'
-}
-
-controls=dbc.Col(
-    [
-        html.P('Select MSA', style={'textAlign': 'center'}),
-        dcc.Dropdown(id='msa_dropdown',
-                     value='New York-Newark-Jersey City, NY-NJ-PA',
-                     options=[{'label':msa, 'value':msa} for msa in msa_list]),
-        html.Br(),
-        html.P('Plot Recessions', style={'textAlign': 'center'}),
-        dbc.Card([dbc.Checklist(
-            id='check_list',
-            options=[{'label': '2001 Tech Bust', 'value': 'tech_bust'},
-                     {'label': 'Great Recession', 'value': 'great_recession'},
-                     {'label': '2020 COVID-19', 'value': 'covid_recession'}
-            ],
-                value=['tech_bust', 'great_recession', 'covid_recession'],
-                #inline=True
-            )])
-    ]
+# App set-up
+app=dash.Dash(
+    __name__, 
+    external_stylesheets=[dbc.themes.FLATLY],
+    meta_tags=[{"name": "viewport", "content": "width=device-width"}],
+    suppress_callback_exceptions=True
 )
+app.title="Social and Economic Trends"
+server=app.server
 
-sidebar=html.Div(
-    [
-        html.H1(children='Parameters', style=TEXT_STYLE),
-        html.Hr(),
-        controls
-    ],
-    style=SIDEBAR_STYLE
-)
 
-content=html.Div([
-    dcc.Tabs(id="tabs-example-graph", value='tab-1', children=[
-        dcc.Tab(label='Population', value='tab-1'),
-        dcc.Tab(label='Labor Force', value='tab-2'),
-        dcc.Tab(label='Employment', value='tab-3'),
-        dcc.Tab(label='Unemployment Rate', value='tab-4'),
-    ]),
-    html.Div(id='tabs-content-example-graph')
-])
+tab_style = {
+    'background-color': '#f8f9fa',
+    'border-color':'#1b9e77',
+    'text-transform': 'uppercase',
+    'font-size': '24px',
+    'font-weight': 600,
+    'align-items': 'center',
+    'padding':'40px'
+}
 
+tab_selected_style = {
+    'border-color':'#1b9e77',
+    'color':'#1b9e77',
+    'text-transform': 'uppercase',
+    'font-size': '24px',
+    'font-weight': 2000,
+    'align-items': 'center',
+    'padding':'40px'
+}
+
+# Describe the layout/ UI of the app
 app.layout=html.Div(
-    dbc.Row([
-        dbc.Col(sidebar, md=3), 
-        dbc.Col(content, md=6)
-    ])
+    [
+        dcc.Tabs(
+            id="tabs", 
+            value='tab-1', 
+            children=[
+                dcc.Tab(label='Population', value='tab-1', style=tab_style, selected_style=tab_selected_style),
+                dcc.Tab(label='Labor Market', value='tab-2', style=tab_style, selected_style=tab_selected_style),
+                dcc.Tab(label='Real GDP / Income', value='tab-3', style=tab_style, selected_style=tab_selected_style)
+            ]
+        ),
+        html.Div(id='tabs-content')
+    ],
+    style={'margin-left': '20%'}
 )
+
+@app.callback(
+    Output('tabs-content', 'children'),
+    [Input('tabs', 'value')]
+)
+def render_content(tab):
+    if tab == 'tab-1':
+        return tab1.create_layout(pop)
+    elif tab == 'tab-2':
+        return tab2.create_layout(lau)
+    elif tab == 'tab-3':
+        return tab3.create_layout(bea)
+
+
+# Tab 1 callback
+@app.callback(
+    Output('graph-1', 'figure'),
+    Output('table-1', 'children'),
+    Input('msa_dropdown', 'value'),
+    Input('recession', 'value'),
+    Input('nation_adj-1', 'value'),
+    Input('nation_slider-1', 'value'),
+    Input('state_adj-1', 'value'),
+    Input('state_slider-1', 'value'),
+    Input('msa_adj-1', 'value'),
+    Input('msa_slider-1', 'value'),
+)
+    
+# chart
+def update_tab1_graph(
+    msa, recession, 
+    nation_adj, nation_slider,
+    state_adj, state_slider,
+    msa_adj, msa_slider):
+            
+    if msa is None:
+        raise PreventUpdate
+    else:
+        state_abbrev=msa.split(', ')[1].strip().split('-')[0].strip()
+        state_name=abbrev_to_us_state[state_abbrev]
+
+    data=pop.copy()
+    df=data[(data.Area=='United States') | (data.Area==state_name) | (data.Area==msa)].copy()
+    df=calc_index(df, 'Population')
+    df=calc_CAGR(df, 'Index')
+            
+    x0=df.Year.min()
+    fig=trend_graph(
+        df, state_name, msa, 'Index', recession,
+        title=f"Population Growth Index ({x0} Level=100)",
+        xaxis_title="Calendar Year",
+        yaxis_title="Index",
+        nation_adj=nation_adj,
+        nation_slider=nation_slider,
+        state_adj=state_adj,
+        state_slider=state_slider,
+        msa_adj=msa_adj,
+        msa_slider=msa_slider
+    )
+
+    table=create_table(data, state_name, msa, 'Population', 'Thousands')
+    table=dash_table.DataTable(
+            columns=[{"name": i, "id": i} for i in table.columns],
+            data=table.to_dict('records'),
+            fixed_rows={'headers': True},
+            style_table={'height': 400},  # defaults to 500
+            style_cell={
+                'fontSize':16, 
+                'font-family':'sans-serif', 
+                'textAlign':'right',
+            },
+            style_header={
+                'fontWeight': 'bold', 
+            },
+            export_format="csv"
+        )
+    return  fig, table
+
+# Tab2 Callback
+@app.callback(
+    Output('area_dropdown', 'options'),
+    Input('type_dropdown', 'value')
+)
+def update_area(type):
+    area_list = (
+        lau.loc[lau.Type==type, 'Area']
+            .copy()
+            .sort_values().unique()
+    )
+    return [{'label':area, 'value':area} for area in area_list]
 
 
 @app.callback(
-    Output('tabs-content-example-graph', 'children'),
-    Input('tabs-example-graph', 'value'),
-    Input('msa_dropdown', 'value'),
-    Input('check_list', 'value')
+    Output('graph-2', 'figure'),
+    Output('graph-month-2', 'figure'),
+    Output('table-2', 'children'),
+    Input('area_dropdown', 'value'),
+    Input('yvar_dropdown', 'value'),
+    Input('recession', 'value'),
+    Input('nation_adj-2', 'value'),
+    Input('nation_slider-2', 'value'),
+    Input('state_adj-2', 'value'),
+    Input('state_slider-2', 'value'),
+    Input('msa_adj-2', 'value'),
+    Input('msa_slider-2', 'value'),
+    Input('nation_apr_adj-2', 'value'),
+    Input('nation_apr_slider-2', 'value'),
+    Input('state_apr_adj-2', 'value'),
+    Input('state_apr_slider-2', 'value'),
+    Input('msa_apr_adj-2', 'value'),
+    Input('msa_apr_slider-2', 'value'),
+    Input('nation_m_adj-2', 'value'),
+    Input('nation_m_slider-2', 'value'),
+    Input('state_m_adj-2', 'value'),
+    Input('state_m_slider-2', 'value'),
+    Input('msa_m_adj-2', 'value'),
+    Input('msa_m_slider-2', 'value'),
 )
 
-# table style
-def display_chart(tab, msa, check_list):
+# chart
+def update_tab2_graph(
+    msa, yvar, recession, 
+    nation_adj, nation_slider,
+    state_adj, state_slider,
+    msa_adj, msa_slider,
+    nation_apr_adj, nation_apr_slider,
+    state_apr_adj, state_apr_slider,
+    msa_apr_adj, msa_apr_slider,
+    nation_m_adj, nation_m_slider,
+    state_m_adj, state_m_slider,
+    msa_m_adj, msa_m_slider):
+            
+    if msa is None:
+        raise PreventUpdate
+    else:
+        state_abbrev=msa.split(', ')[1].strip().split('-')[0].strip()
+        state_name=abbrev_to_us_state[state_abbrev]
+
+    data=lau.copy()
+    df=data[(data.Area=='United States') | (data.Area==state_name) | (data.Area==msa)].copy()
+    df=df[(df.Year>=2000) & (df.Year<=2021)]
+    df=df[['Area', 'Date', 'Year', 'Type', yvar]]
+    df=calc_index(df, yvar)
+    df=calc_CAGR(df, 'Index')
+            
+    x0=int(df.Year.min())
+    if yvar=='Unemployment Rate':
+        title="Annual Average Unemployment Rate (Seasonally Adjusted)"
+        yaxis_title="Percentage"
+        yvarname=yvar
+        table=create_table(data, state_name, msa, yvar, 'Percentage')
+    else:
+        title=f"{yvar} Growth Index ({x0} Level=100)"
+        yaxis_title="Index"
+        yvarname='Index'
+        table=create_table(data, state_name, msa, yvar, 'Thousands')
+
+    fig=trend_graph(
+        df, state_name, msa, yvarname, recession,
+        title=title,
+        xaxis_title="Calendar Year",
+        yaxis_title=yaxis_title,
+        nation_adj=nation_adj,
+        nation_slider=nation_slider,
+        state_adj=state_adj,
+        state_slider=state_slider,
+        msa_adj=msa_adj,
+        msa_slider=msa_slider
+    )
+
+    df_m=data[(data.Area=='United States') | (data.Area==state_name) | (data.Area==msa)].copy()
+    df_m=df_m[df_m.Year>=2020]
+    df_m=df_m[['Area', 'Date', 'Year', 'Type', yvar]]
+    df_m=calc_index(df_m, yvar, 'Date')
+
+    x0_year=df_m.Date.dt.year.min()
+    x0_month = df_m[df_m.Date.dt.year==x0_year].Date.min().month_name()
+    if yvar=='Unemployment Rate':
+        title="Monthly Unemployment Rate (Seasonally Adjusted)"
+        yaxis_title="Percentage"
+        yvarname=yvar
+    else:
+        title=f"{yvar} Growth Index ({x0_month} {x0_year} Level=100)"
+        yaxis_title="Index"
+        yvarname='Index'
+    fig2=month_graph(
+        df_m, state_name, msa, yvarname, recession,
+        title=title,
+        xaxis_title="Date",
+        yaxis_title=yaxis_title,
+        nation_apr_adj=nation_apr_adj,
+        nation_apr_slider=nation_apr_slider,
+        state_apr_adj=state_apr_adj,
+        state_apr_slider=state_apr_slider,
+        msa_apr_adj=msa_apr_adj,
+        msa_apr_slider=msa_apr_slider,
+        nation_m_adj=nation_m_adj,
+        nation_m_slider=nation_m_slider,
+        state_m_adj=state_m_adj,
+        state_m_slider=state_m_slider,
+        msa_m_adj=msa_m_adj,
+        msa_m_slider=msa_m_slider
+    )
+
+    table=dash_table.DataTable(
+            columns=[{"name": i, "id": i} for i in table.columns],
+            data=table.to_dict('records'),
+            fixed_rows={'headers': True},
+            style_table={'height': 400},  # defaults to 500
+            style_cell={
+                'fontSize':16, 
+                'font-family':'sans-serif', 
+                'textAlign':'right',
+            },
+            style_header={
+                'fontWeight': 'bold', 
+            },
+            export_format="csv"
+        )
+    return  fig, fig2, table
+
+# Tab 3
+@app.callback(
+    Output('graph-3', 'figure'),
+    Output('table-3', 'children'),
+    Input('area_dropdown', 'value'),
+    Input('yvar_dropdown', 'value'),
+    Input('recession', 'value'),
+    Input('nation_adj-3', 'value'),
+    Input('nation_slider-3', 'value'),
+    Input('state_adj-3', 'value'),
+    Input('state_slider-3', 'value'),
+    Input('msa_adj-3', 'value'),
+    Input('msa_slider-3', 'value')
+)
+
+# chart
+def display_tab3_chart(
+    msa, yvar, recession,
+    nation_adj, nation_slider,
+    state_adj, state_slider,
+    msa_adj, msa_slider):
         
     if msa is None:
         raise PreventUpdate
     else:
         state_abbrev=msa.split(', ')[1].strip().split('-')[0].strip()
         state_name=abbrev_to_us_state[state_abbrev]
-    yvarname=None
-    max_height=None
 
-    if tab == 'tab-1': 
-        df=pop[(pop.Area=='United States') | (pop.Area==state_name) | (pop.Area==msa)].copy()
-        table=create_table(pop, state_name, msa, 'Population', 'Thousands')
-        df=calc_index(df, 'Population')
-        df=calc_CAGR(df, 'Index')
+    data=bea.copy()
+    df=data[(bea.Area=='United States') | (data.Area==state_name) | (data.Area==msa)].copy()
+    df=df[['Area', 'Date', 'Year', 'Type', yvar]]
+    df=calc_index(df, yvar)
+    df=calc_CAGR(df, 'Index')
+        
+    x0=df.Year.min()
+    if yvar=='Real Per Capita Personal Income':
+        title="Real Per Capita Personal Income (2012 Dollars)"
+        yaxis_title="Thousand Dollars"
+        yvarname=yvar
+        table=create_table(data, state_name, msa, yvar, 'Thousands')
+    elif yvar=="Real GDP (Millions)":
+        title=f"Real GDP Growth Index ({x0} Level=100)"
+        yaxis_title="Index"
         yvarname='Index'
-        x0=df.Year.min()
-        fig=trend_graph(
-            df, state_name, msa, yvarname, check_list,
-            title=f"Population Growth Index ({x0} Level=100)",
-            xaxis_title="Calendar Year",
-            yaxis_title="Index"
-        )
-        return html.Div([
-            html.Br(),
-            dcc.Graph(
-                id='graph-1-tabs',
-                figure=fig
-            ),
-            html.P('Source: Census Population and Housing'),
-            dash_table.DataTable(
-                id='table-1-tabs',
-                columns=[{"name": i, "id": i} for i in table.columns],
-                data=table.to_dict('records'),
-                fixed_rows={'headers': True},
-                style_table={'height': 400},  # defaults to 500
-                style_cell={
-                    'fontSize':16, 
-                    'font-family':'sans-serif', 
-                    'textAlign':'right',
-                },
-                style_header={
-                    'fontWeight': 'bold', 
-                },
-                export_format="csv"
-            )
-    ])
-    elif tab == 'tab-2': 
-        df=lau[(lau.Area=='United States') | (lau.Area==state_name) | (lau.Area==msa)].copy()
-        table=create_table(lau, state_name, msa, 'Labor Force', 'Thousands')
-        df=calc_index(df, 'Labor Force')
-        df=calc_CAGR(df, 'Index')
-        yvarname='Index'
-        x0=df.Year.min()
-        fig=trend_graph(
-            df, state_name, msa, yvarname, check_list,
-            title=f"Labor Force Growth Index ({x0} Level=100)",
-            xaxis_title="Calendar Year",
-            yaxis_title="Index",
-        )
-        return html.Div([
-            html.Br(),
-            dcc.Graph(
-                id='graph-2-tabs',
-                figure=fig
-            ),
-            html.P('Source: Bureau of Labor Statistics'),
-            dash_table.DataTable(
-                id='table-2-tabs',
-                columns=[{"name": i, "id": i} for i in table.columns],
-                data=table.to_dict('records'),
-                fixed_rows={'headers': True},
-                style_table={'height': 400},  # defaults to 500
-                style_cell={
-                    'fontSize':16, 
-                    'font-family':'sans-serif', 
-                    'textAlign':'right',
-                },
-                style_header={
-                    'fontWeight': 'bold', 
-                },
-                export_format="csv"
-            )
-        ])
-    elif tab == 'tab-3': 
-        df=lau[(lau.Area=='United States') | (lau.Area==state_name) | (lau.Area==msa)].copy()
-        table=create_table(lau, state_name, msa, 'Employment', 'Thousands')
-        df=calc_index(df, 'Employment')
-        df=calc_CAGR(df, 'Index')
-        yvarname='Index'
-        x0=df.Year.min()
-        fig=trend_graph(
-            df, state_name, msa, yvarname, check_list,
-            title=f"Employment Growth Index ({x0} Level=100)",
-            xaxis_title="Calendar Year",
-            yaxis_title="Index",
-        )
-        return html.Div([
-            html.Br(),
-            dcc.Graph(
-                id='graph-3-tabs',
-                figure=fig
-            ),
-            html.P('Source: Bureau of Labor Statistics'),
-            dash_table.DataTable(
-                id='table-3-tabs',
-                columns=[{"name": i, "id": i} for i in table.columns],
-                data=table.to_dict('records'),
-                fixed_rows={'headers': True},
-                style_table={'height': 400},  # defaults to 500
-                style_cell={
-                    'fontSize':16, 
-                    'font-family':'sans-serif', 
-                    'textAlign':'right',
-                },
-                style_header={
-                    'fontWeight': 'bold', 
-                },
-                export_format="csv"
-            )
-        ])
+        table=create_table(data, state_name, msa, yvar, 'Thousands')
+    fig=bea_graph(
+        df, state_name, msa, yvarname, recession,
+        title=title,
+        xaxis_title="Calendar Year",
+        yaxis_title=yaxis_title,
+        nation_adj=nation_adj,
+        nation_slider=nation_slider,
+        state_adj=state_adj,
+        state_slider=state_slider,
+        msa_adj=msa_adj,
+        msa_slider=msa_slider
+    )
 
-    elif tab == 'tab-4': 
-        df=lau[(lau.Area=='United States') | (lau.Area==state_name) | (lau.Area==msa)].copy()
-        table=create_table(lau, state_name, msa, 'Unemployment Rate', 'Percentage')
-        yvarname='Unemployment Rate'
-        fig=trend_graph(
-            df, state_name, msa, yvarname, check_list,
-            title="Annual Average Unemployment Rate (Seasonally Adjusted)",
-            xaxis_title="Calendar Year",
-            yaxis_title="Percentage",
-        )
-        return html.Div([
-            html.Br(),
-            dcc.Graph(
-                id='graph-4-tabs',
-                figure=fig
-            ),
-            html.P('Source: Bureau of Labor Statistics'),
-            dash_table.DataTable(
-                id='table-4-tabs',
-                columns=[{"name": i, "id": i} for i in table.columns],
-                data=table.to_dict('records'),
-                fixed_rows={'headers': True},
-                style_table={'height': 400},  # defaults to 500
-                style_cell={
-                    'fontSize':16, 
-                    'font-family':'sans-serif', 
-                    'textAlign':'right',
-                },
-                style_header={
-                    'fontWeight': 'bold', 
-                },
-                export_format="csv"
-            )
-        ])
-
+    table=dash_table.DataTable(
+        columns=[{"name": i, "id": i} for i in table.columns],
+        data=table.to_dict('records'),
+        fixed_rows={'headers': True},
+        style_table={'height': 400},  # defaults to 500
+        style_cell={
+            'fontSize':16, 
+            'font-family':'sans-serif', 
+            'textAlign':'right',
+        },
+        style_header={
+            'fontWeight': 'bold', 
+        },
+        export_format="csv"
+    )
+    return  fig, table
 
 if __name__ == '__main__':
-    app.run_server(debug=False)
+    app.run_server(debug=True)
