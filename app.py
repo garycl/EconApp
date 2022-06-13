@@ -78,7 +78,7 @@ abbrev_to_us_state=dict(map(reversed, us_state_to_abbrev.items()))
 pop=pd.read_csv('https://raw.githubusercontent.com/garycl/EconApp/master/data/pop.csv')
 pop=get_balanced_panel(pop, datevar='Year', format='%Y')
 
-lau=pd.read_csv('/Users/GaryLin/Dropbox/Unison/Analytics/EconApp/data/lau.csv')
+lau=pd.read_csv('https://raw.githubusercontent.com/garycl/EconApp/master/data/lau.csv')
 #lau=get_balanced_panel(lau, datevar='Year')
 lau=get_balanced_panel(lau, datevar='Date', format='%Y-%m-%d')
 
